@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { startTaskScheduler } from '@/lib/taskScheduler';
+import { ToastProvider } from '@/components/ui/ToastProvider';
+
+const taskSchedulerStarted = globalThis as typeof globalThis & { __taskSchedulerStarted?: boolean };
+
+if (!taskSchedulerStarted.__taskSchedulerStarted) {
+  taskSchedulerStarted.__taskSchedulerStarted = true;
+  startTaskScheduler();
+}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +36,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

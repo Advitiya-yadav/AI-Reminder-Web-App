@@ -1,0 +1,220 @@
+generator client {
+provider = "prisma-client-js"
+}
+
+datasource db {
+provider = "postgresql"
+url      = env("DATABASE_URL")
+}
+
+model User {
+id           String   @id @default(cuid())
+email        String   @unique
+username     String?  // Display name
+phoneNumber  String?
+passwordHash String
+language     String   @default("en") // Language preference
+
+lists              List[]
+dailyAnalytics     DailyAnalytics[]
+weeklyAnalytics    WeeklyAnalytics[]
+monthlyAnalytics   MonthlyAnalytics[]
+reports            Report[]
+
+// Friend system
+sentFriendRequests     FriendRequest[] @relation("requester")
+receivedFriendRequests FriendRequest[] @relation("receiver")
+friendships            Friendship[]    @relation("user1")
+friendships2           Friendship[]    @relation("user2")
+listPermissions        ListPermission[]
+emailNotifications     EmailNotification[]
+
+createdAt    DateTime @default(now())
+}
+
+model List {
+id        String   @id @default(cuid())
+name      String
+
+userId    String
+user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+tasks               Task[]
+listPermissions     ListPermission[]
+
+createdAt DateTime @default(now())
+updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Task {
+id          String   @id @default(cuid())
+title       String
+description String?
+priority    String   @default("medium") // low | medium | high
+category    String   @default("productivity") // productivity | work | social | health | personal | study | errands | creative
+
+completed   Boolean  @default(false)
+completedAt DateTime?
+dueDate     DateTime?
+
+listId      String
+list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+createdAt   DateTime @default(now())
+updatedAt   DateTime @default(now()) @updatedAt
+
+@@index([listId])
+@@index([dueDate])
+}
+
+model DailyAnalytics {
+id                    String   @id @default(cuid())
+userId                String
+user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+date                  DateTime @db.Date
+tasksCompleted        Int      @default(0)
+tasksCreated          Int      @default(0)
+completionRate        Float    @default(0)
+completionValue       Float    @default(0)
+averageCompletionTime Int?     // in minutes
+
+createdAt             DateTime @default(now())
+updatedAt             DateTime @updatedAt
+
+@@unique([userId, date])
+@@index([userId, date])
+}
+
+model WeeklyAnalytics {
+id                    String   @id @default(cuid())
+userId                String
+user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+weekStart             DateTime @db.Date
+weekEnd               DateTime @db.Date
+tasksCompleted        Int      @default(0)
+tasksCreated          Int      @default(0)
+completionRate        Float    @default(0)
+averageCompletionTime Int?     // in minutes
+topCategories         String[] // JSON array of category names
+productivity          String   // "Low" | "Medium" | "High"
+
+createdAt             DateTime @default(now())
+updatedAt             DateTime @updatedAt
+
+@@unique([userId, weekStart])
+@@index([userId])
+}
+
+model MonthlyAnalytics {
+id                    String   @id @default(cuid())
+userId                String
+user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+year                  Int
+month                 Int      // 1-12
+tasksCompleted        Int      @default(0)
+tasksCreated          Int      @default(0)
+completionRate        Float    @default(0)
+averageCompletionTime Int?     // in minutes
+topCategories         String[] // JSON array of category names
+productivity          String   // "Low" | "Medium" | "High"
+trends                String?  // JSON object with trend data
+
+createdAt             DateTime @default(now())
+updatedAt             DateTime @updatedAt
+
+@@unique([userId, year, month])
+@@index([userId])
+}
+
+model Report {
+id           String   @id @default(cuid())
+userId       String
+user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+timeframe    String   // "daily" | "weekly" | "monthly"
+period       String   // "2024-01-15" or "2024-W05" or "2024-01"
+aiInsights   String   // AI-generated report content (markdown)
+summary      String?  // Brief summary
+recommendations String[]  // Array of recommendations
+
+createdAt    DateTime @default(now())
+updatedAt    DateTime @updatedAt
+
+@@index([userId, timeframe])
+@@index([createdAt])
+}
+
+// Friend Request System
+model FriendRequest {
+id          String   @id @default(cuid())
+requesterId String
+requestee   User     @relation("requester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+receiverId  String
+receiver    User     @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+status      String   @default("pending") // pending | accepted | rejected
+createdAt   DateTime @default(now())
+updatedAt   DateTime @updatedAt
+
+@@unique([requesterId, receiverId])
+@@index([receiverId])
+}
+
+model Friendship {
+id        String   @id @default(cuid())
+user1Id   String
+user1     User     @relation("user1", fields: [user1Id], references: [id], onDelete: Cascade)
+
+user2Id   String
+user2     User     @relation("user2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+createdAt DateTime @default(now())
+
+@@unique([user1Id, user2Id])
+@@index([user1Id])
+@@index([user2Id])
+}
+
+// List Sharing & Permissions
+model ListPermission {
+id      String   @id @default(cuid())
+listId  String
+list    List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+friendId String
+friend   User     @relation(fields: [friendId], references: [id], onDelete: Cascade)
+
+canAdd    Boolean  @default(false)
+canEdit   Boolean  @default(false)
+canRemove Boolean  @default(false)
+
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+@@unique([listId, friendId])
+@@index([friendId])
+}
+
+// Email Notifications
+model EmailNotification {
+id          String   @id @default(cuid())
+userId      String
+user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+taskId      String?
+title       String
+type        String   // "deadline_reminder" | "pre_deadline" | "task_completed"
+message     String
+scheduledFor DateTime
+sentAt      DateTime?
+read        Boolean  @default(false)
+
+createdAt   DateTime @default(now())
+
+@@index([userId, scheduledFor])
+@@index([sentAt])
+}
