@@ -251,14 +251,15 @@ const Lists = () => {
             <button onClick={() => s.setEditingTask(null)} className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600"><X size={20} /></button>
           </div>
           <div className="flex flex-col gap-5 flex-1 overflow-y-auto pr-1">
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-400 uppercase">Task Heading</label><input type="text" value={s.editingTask.title} onChange={(e) => s.setEditingTask({...s.editingTask!, title: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-gray-50" /></div>
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-400 uppercase">Completion Date</label><input type="date" value={s.editingTask.date} onChange={(e) => s.setEditingTask({...s.editingTask!, date: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-gray-50" /></div>
-            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-400 uppercase">Target Time</label><input type="time" value={s.editingTask.time} onChange={(e) => s.setEditingTask({...s.editingTask!, time: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-gray-50" /></div>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-400 uppercase">Task Heading</label><input type="text" value={s.editingTask.title ?? ''} onChange={(e) => s.setEditingTask({...s.editingTask!, title: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-gray-50" /></div>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-400 uppercase">Completion Date</label><input type="date" value={s.editingTask.date ?? ''} onChange={(e) => s.setEditingTask({...s.editingTask!, date: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-gray-50" /></div>
+            <div className="flex flex-col gap-1.5"><label className="text-xs font-bold text-gray-400 uppercase">Target Time</label><input type="time" value={s.editingTask.time ?? ''} onChange={(e) => s.setEditingTask({...s.editingTask!, time: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-gray-50" /></div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-400 uppercase">Alert Buffer</label>
+              <label className="text-xs font-bold text-gray-400 uppercase">Remind me</label>
               <select value={s.editingTask.reminderOffset || ""} onChange={(e) => s.setEditingTask({...s.editingTask!, reminderOffset: e.target.value})} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-gray-50 text-gray-700">
                 <option value="">No Reminder</option>
                 <option value="5m">5 Minutes Before</option>
+                <option value="10m">10 Minutes Before</option>
                 <option value="15m">15 Minutes Before</option>
                 <option value="30m">30 Minutes Before</option>
                 <option value="1h">1 Hour Before</option>

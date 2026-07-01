@@ -61,11 +61,17 @@ export async function PATCH(
       )
     }
 
+    // allow owner OR collaborator with canEdit permission
     if (task.list.userId !== userId) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      )
+      const perm = await prisma.listPermission.findFirst({
+        where: { listId: task.listId, friendId: userId, canEdit: true },
+      });
+      if (!perm) {
+        return NextResponse.json(
+          { error: 'Forbidden: you are not allowed to edit this task' },
+          { status: 403 }
+        )
+      }
     }
 
     const updateData: Record<string, unknown> = {
@@ -90,11 +96,40 @@ export async function PATCH(
 
     if (typeof body.completed === 'boolean') {
       updateData.completed = body.completed
-      updateData.completedAt = body.completed ? new Date() : null
+      // allow explicit completedAt value (user provided) or use now when marking complete
+      if (body.completedAt) {
+        updateData.completedAt = new Date(body.completedAt)
+      } else {
+        updateData.completedAt = body.completed ? new Date() : null
+      }
     }
 
-    if (body.dueDate) {
-      updateData.dueDate = new Date(body.dueDate)
+    // Support setting due date via separate date/time fields from the client
+    if (body.date || body.time || body.dueDate) {
+      try {
+        if (body.dueDate) {
+          updateData.dueDate = new Date(body.dueDate)
+        } else {
+          const datePart = body.date || null
+          const timePart = body.time || '00:00'
+          if (datePart) {
+            updateData.dueDate = new Date(`${datePart}T${timePart}`)
+          }
+        }
+      } catch (err) {
+        console.warn('Invalid date/time provided for dueDate', err)
+      }
+    }
+
+    // persist reminder offset string (e.g., '5m', '1h', '1d')
+    if (body.reminderOffset !== undefined) {
+      if (body.reminderOffset === null) {
+        updateData.reminderOffset = null
+      } else if (typeof body.reminderOffset === 'string') {
+        updateData.reminderOffset = body.reminderOffset.trim() === '' ? null : body.reminderOffset.trim()
+      } else {
+        return NextResponse.json({ error: 'Invalid reminderOffset value' }, { status: 400 })
+      }
     }
 
     const updatedTask = await prisma.task.update({
@@ -104,17 +139,26 @@ export async function PATCH(
       data: updateData,
     })
 
+    // derive date/time strings from dueDate if available for frontend convenience
+    let dateStr = null
+    let timeStr = null
+    if (updatedTask.dueDate) {
+      const d = new Date(updatedTask.dueDate as any)
+      dateStr = d.toISOString().split('T')[0]
+      timeStr = d.toTimeString().slice(0,5)
+    }
+
     return NextResponse.json({
       ...updatedTask,
-      date: body.date ?? null,
-      time: body.time ?? null,
-      reminderOffset: body.reminderOffset ?? null,
+      date: dateStr,
+      time: timeStr,
+      reminderOffset: (updatedTask as any).reminderOffset ?? null,
     })
   } catch (error) {
-    console.error(error)
-
+    console.error('Task PATCH error:', error)
+    const message = error instanceof Error ? error.message : 'Failed to update task'
     return NextResponse.json(
-      { error: 'Failed to update task' },
+      { error: message },
       { status: 500 }
     )
   }

@@ -158,7 +158,7 @@ export async function POST(
         listId,
         friendId: friend.id,
         canAdd: true,
-        canEdit: false,
+        canEdit: true,
         canRemove: false,
       },
       include: {

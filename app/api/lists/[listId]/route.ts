@@ -85,7 +85,24 @@ export async function GET(
       },
     })
 
-    return NextResponse.json(tasks)
+    // Derive date/time and include reminderOffset for frontend
+    const annotated = tasks.map((t) => {
+      let date = null
+      let time = null
+      if (t.dueDate) {
+        const d = new Date(t.dueDate as any)
+        date = d.toISOString().split('T')[0]
+        time = d.toTimeString().slice(0,5)
+      }
+      return {
+        ...t,
+        date,
+        time,
+        reminderOffset: (t as any).reminderOffset ?? null,
+      }
+    })
+
+    return NextResponse.json(annotated)
   } catch (error) {
     console.error(error)
 

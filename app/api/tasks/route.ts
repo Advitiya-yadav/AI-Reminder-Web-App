@@ -30,6 +30,8 @@ export async function POST(req: Request) {
     const listId = formData.get('contextId') as string | null
     const rawCategory = formData.get('category') as string | null
     const description = formData.get('description') as string | null
+    const dueDateRaw = formData.get('dueDate') as string | null
+    const reminderOffset = formData.get('reminderOffset') as string | null
 
     if (!title || !listId) {
       return NextResponse.json(
@@ -61,13 +63,29 @@ export async function POST(req: Request) {
 
     const category = normalizeTaskCategory(rawCategory || inferTaskCategory(title, description || ''))
 
+    const createData: any = {
+      title,
+      description: description || null,
+      category,
+      listId,
+    }
+
+    if (dueDateRaw) {
+      try {
+        createData.dueDate = new Date(dueDateRaw)
+      } catch {}
+    } else {
+      // default dueDate to end of creation day (23:59) to avoid null inputs on frontend
+      const now = new Date()
+      createData.dueDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 0, 0)
+    }
+
+    if (reminderOffset) {
+      createData.reminderOffset = reminderOffset
+    }
+
     const task = await prisma.task.create({
-      data: {
-        title,
-        description: description || null,
-        category,
-        listId,
-      },
+      data: createData,
     })
 
     return NextResponse.json(task, {

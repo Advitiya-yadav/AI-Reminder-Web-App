@@ -485,8 +485,15 @@ if (!token) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Backend failed to persist task modifications.');
+        const errorText = await response.text().catch(() => '');
+        let errorMessage = 'Backend failed to persist task modifications.';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          if (errorText) errorMessage = errorText;
+        }
+        throw new Error(errorMessage);
       }
 
       
@@ -501,7 +508,8 @@ if (!token) {
 
     } catch (error) {
       console.error("Error updating task settings on backend:", error);
-      toast.push({ title: 'Save failed', description: 'Failed to save task to server; using offline fallback.', type: 'error' });
+        const msg = (error as any)?.message || 'Failed to save task to server; using offline fallback.';
+        toast.push({ title: 'Save failed', description: msg, type: 'error' });
 
       // Optimistic fallback so your app stays functional while testing on local environments:
       setTasks(prev => prev.map(t => t.id === editingTask.id ? editingTask : t));
