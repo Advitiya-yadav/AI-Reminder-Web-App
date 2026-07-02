@@ -17,6 +17,7 @@ const Lists = () => {
   const totalTasks = s.tasks.length;
   const completedTasks = s.tasks.filter(task => task.completed).length;
   const listProgressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  const shouldShowTaskLoadingIndicator = s.isLoadingTasks && Boolean(s.activeListId) && s.activeListId !== 'empty' && s.activeListId !== 'error' && s.sidebarItems.length > 0;
   const [displayedName, setDisplayedName] = useState('User');
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
   const [isCollaboratorsOpen, setIsCollaboratorsOpen] = useState(false);
@@ -187,7 +188,7 @@ const Lists = () => {
           )}
         </div>
 
-        {s.isLoadingTasks && s.activeListId && s.activeListId !== 'empty' && s.activeListId !== 'error' && (
+        {shouldShowTaskLoadingIndicator && (
           <div className="fixed bottom-6 right-6 z-50">
             <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#F2D9B3] bg-white/90 shadow-lg backdrop-blur-sm">
               <Loader2 size={18} className="animate-spin text-[#F28C38]" />

@@ -113,6 +113,7 @@ export const useListsState = () => {
 if (!token) {
         setSidebarItems([]);
         setActiveContext({ id: 'error', name: 'Please sign in', type: 'personal' });
+        setIsLoadingTasks(false);
         return;
       }
 
@@ -154,6 +155,7 @@ if (!token) {
             name: 'No Lists Found',
             type: 'personal'
           });
+          setIsLoadingTasks(false);
         }
       } catch (error) {
         console.error("Error fetching user lists:", error);
@@ -175,6 +177,7 @@ if (!token) {
         }
 
         setSidebarItems([]);
+        setIsLoadingTasks(false);
 
         setActiveContext({
           id: 'error',

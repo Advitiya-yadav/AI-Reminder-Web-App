@@ -33,17 +33,32 @@ export async function GET(
 
     const { listId } = await params;
 
-    // Verify ownership
     const list = await prisma.list.findUnique({
       where: { id: listId },
     });
 
-    if (!list || list.userId !== userId) {
-      return NextResponse.json(
-        { error: 'Not authorized' },
-        { status: 403 }
-      );
+    if (!list) {
+      return NextResponse.json({ error: 'List not found' }, { status: 404 });
     }
+
+    const isOwner = list.userId === userId;
+    if (!isOwner) {
+      const collaborator = await prisma.listPermission.findFirst({
+        where: {
+          listId,
+          friendId: userId,
+        },
+      });
+
+      if (!collaborator) {
+        return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+      }
+    }
+
+    const owner = await prisma.user.findUnique({
+      where: { id: list.userId },
+      select: { id: true, email: true, username: true },
+    });
 
     const permissions = await prisma.listPermission.findMany({
       where: { listId },
@@ -54,7 +69,19 @@ export async function GET(
       },
     });
 
-    return NextResponse.json(permissions);
+    const members = [
+      owner ? { ...owner, role: 'owner' } : null,
+      ...permissions.map((permission) => permission.friend ? { ...permission.friend, role: 'collaborator' } : null),
+    ].filter(Boolean);
+
+    return NextResponse.json({
+      isOwner,
+      owner: owner ? { ...owner, role: 'owner' } : null,
+      collaborators: permissions
+        .map((permission) => permission.friend ? { ...permission.friend, role: 'collaborator' } : null)
+        .filter(Boolean),
+      members,
+    });
   } catch (error) {
     console.error('Error fetching permissions:', error);
     return NextResponse.json(

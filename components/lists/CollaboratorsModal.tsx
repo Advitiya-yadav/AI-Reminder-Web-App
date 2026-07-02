@@ -13,6 +13,7 @@ interface Collaborator {
   id: string;
   email: string;
   username?: string;
+  role?: 'owner' | 'collaborator';
 }
 
 interface CollaboratorsModalProps {
@@ -27,7 +28,9 @@ export default function CollaboratorsModal({
   onClose,
 }: CollaboratorsModalProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [members, setMembers] = useState<Collaborator[]>([]);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [canManageCollaborators, setCanManageCollaborators] = useState(false);
   const [selectedFriendId, setSelectedFriendId] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,10 +63,13 @@ export default function CollaboratorsModal({
 
         if (collaboratorsRes.ok) {
           const data = await collaboratorsRes.json();
-          const collaboratorUsers = data
-            .filter((item: any) => item.friend?.id)
-            .map((item: any) => item.friend);
+          const memberUsers = Array.isArray(data.members)
+            ? data.members
+            : [];
+          const collaboratorUsers = memberUsers.filter((member: Collaborator) => member.role === 'collaborator');
+          setMembers(memberUsers);
           setCollaborators(collaboratorUsers);
+          setCanManageCollaborators(Boolean(data.isOwner));
         }
       } catch (err) {
         console.error('Error loading collaborators modal data:', err);
@@ -115,8 +121,9 @@ export default function CollaboratorsModal({
       }
 
       const added = await res.json();
-      const friend = added.friend || { id: added.friendId, email: added.email, username: added.username };
+      const friend = added.friend || { id: added.friendId, email: added.email, username: added.username, role: 'collaborator' };
       setCollaborators((current) => [...current.filter((c) => c.id !== friend.id), friend]);
+      setMembers((current) => [...current.filter((member) => member.id !== friend.id), friend]);
       setSelectedFriendId('');
       setEmail('');
       setSuccess('Collaborator added successfully');
@@ -148,6 +155,7 @@ export default function CollaboratorsModal({
       }
 
       setCollaborators((current) => current.filter((c) => c.id !== collaboratorId));
+      setMembers((current) => current.filter((member) => member.id !== collaboratorId));
       setSuccess('Collaborator removed');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -169,42 +177,46 @@ export default function CollaboratorsModal({
           </button>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Add a collaborator</label>
-            <select
-              value={selectedFriendId}
-              onChange={(e) => setSelectedFriendId(e.target.value)}
-              className="w-full rounded-2xl border border-gray-300 bg-[#FFF8F0] px-4 py-3 text-sm text-gray-700 outline-none"
+        {canManageCollaborators && (
+          <>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Add a collaborator</label>
+                <select
+                  value={selectedFriendId}
+                  onChange={(e) => setSelectedFriendId(e.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 bg-[#FFF8F0] px-4 py-3 text-sm text-gray-700 outline-none"
+                >
+                  <option value="">Choose a friend...</option>
+                  {friends.map((friend) => (
+                    <option key={friend.id} value={friend.id}>
+                      {friend.username ? `${friend.username} (${friend.email})` : friend.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Or enter friend email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="friend@gmail.com"
+                  className="w-full rounded-2xl border border-gray-300 bg-[#FFF8F0] px-4 py-3 text-sm text-gray-700 outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleAddCollaborator}
+              disabled={loading}
+              className="mt-4 inline-flex items-center justify-center rounded-2xl bg-[#F28C38] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#e07b27] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <option value="">Choose a friend...</option>
-              {friends.map((friend) => (
-                <option key={friend.id} value={friend.id}>
-                  {friend.username ? `${friend.username} (${friend.email})` : friend.email}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Or enter friend email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="friend@gmail.com"
-              className="w-full rounded-2xl border border-gray-300 bg-[#FFF8F0] px-4 py-3 text-sm text-gray-700 outline-none"
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={handleAddCollaborator}
-          disabled={loading}
-          className="mt-4 inline-flex items-center justify-center rounded-2xl bg-[#F28C38] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#e07b27] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loading ? 'Adding...' : 'Add Collaborator'}
-        </button>
+              {loading ? 'Adding...' : 'Add Collaborator'}
+            </button>
+          </>
+        )}
 
         {(error || success) && (
           <p className={`mt-3 text-sm ${error ? 'text-red-600' : 'text-emerald-600'}`}>
@@ -214,25 +226,22 @@ export default function CollaboratorsModal({
 
         <div className="mt-6 rounded-3xl border border-[#F2D9B3] bg-[#FFF8F0] p-4">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-[#8A4B12]">Current collaborators</p>
-            <span className="text-xs text-gray-500">Only friends can be added here.</span>
+            <p className="text-sm font-semibold text-[#8A4B12]">Current members</p>
+            <span className="text-xs text-gray-500">{canManageCollaborators ? 'Only the list creator can manage collaborators.' : 'View-only access for shared list members.'}</span>
           </div>
-          {collaborators.length === 0 ? (
-            <p className="text-sm text-gray-600">No collaborators added yet.</p>
+          {members.length === 0 ? (
+            <p className="text-sm text-gray-600">No members yet.</p>
           ) : (
             <div className="space-y-3">
-              {collaborators.map((collaborator) => (
-                <div key={collaborator.id} className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+              {members.map((member) => (
+                <div key={member.id} className="flex items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">{collaborator.username || collaborator.email}</p>
-                    <p className="text-xs text-gray-500">{collaborator.email}</p>
+                    <p className="text-sm font-semibold text-gray-800">{member.username || member.email}</p>
+                    <p className="text-xs text-gray-500">{member.email}</p>
                   </div>
-                  <button
-                    onClick={() => handleRemoveCollaborator(collaborator.id)}
-                    className="rounded-full bg-rose-500 px-3 py-2 text-xs font-semibold text-white hover:bg-rose-600 transition"
-                  >
-                    Remove
-                  </button>
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${member.role === 'owner' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>
+                    {member.role === 'owner' ? 'Owner' : 'Collaborator'}
+                  </span>
                 </div>
               ))}
             </div>
