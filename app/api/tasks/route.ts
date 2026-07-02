@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
-import { inferTaskCategory, normalizeTaskCategory } from '@/lib/taskCategory'
+import { classifyTaskCategory, normalizeTaskCategory } from '@/lib/taskCategory'
 
 function getUserIdFromRequest(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -61,7 +61,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const category = normalizeTaskCategory(rawCategory || inferTaskCategory(title, description || ''))
+    const category = title.trim() || description?.trim()
+      ? await classifyTaskCategory(title, description || '')
+      : normalizeTaskCategory(rawCategory)
 
     const createData: any = {
       title,

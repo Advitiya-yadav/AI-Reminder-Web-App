@@ -43,9 +43,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {children}
       <div className="fixed right-4 bottom-6 z-50 flex flex-col-reverse gap-3 max-w-sm">
         {toasts.map(t => (
-          <div key={t.id} className={`w-96 max-w-full rounded-lg px-4 py-3 shadow-lg border ${t.type === 'error' ? 'bg-rose-50 border-rose-200 text-rose-900' : t.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-white border-gray-100 text-gray-900'}`}>
-            {t.title && <div className="font-semibold text-sm mb-0.5">{t.title}</div>}
-            {t.description && <div className="text-xs opacity-90">{t.description}</div>}
+          <div key={t.id} className={`w-96 max-w-full rounded-2xl border px-4 py-3 shadow-sm backdrop-blur-sm ${t.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-900' : t.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-[#F2D9B3] bg-white text-gray-800'}`}>
+            {t.title && <div className="text-sm font-semibold">{t.title}</div>}
+            {t.description && <div className="mt-1 text-xs opacity-90">{t.description}</div>}
           </div>
         ))}
       </div>

@@ -159,7 +159,7 @@ const Lists = () => {
           
           <div className="w-full bg-white border border-gray-200 rounded-2xl p-4 shadow-sm text-left">
             <div className="flex justify-between items-center text-xs font-semibold text-gray-500 mb-2">
-              <span>List Completion Progress</span>
+              <span>Progress</span>
               <span>{completedTasks} / {totalTasks} Done ({Math.round(listProgressPercentage)}%)</span>
             </div>
             <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
@@ -170,12 +170,7 @@ const Lists = () => {
 
         {/* TASK STREAM CARDS */}
         <div className="w-full max-w-2xl space-y-4 z-10 text-left">
-          {s.isLoadingTasks ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-2 w-full">
-              <Loader2 size={24} className="animate-spin text-[#F28C38]" />
-              <span className="text-xs font-medium">Loading tasks...</span>
-            </div>
-          ) : s.tasks.length === 0 ? (
+          {s.tasks.length === 0 && !s.isLoadingTasks ? (
             <div className="bg-white/50 border border-dashed border-gray-300 rounded-2xl p-12 text-center text-xs text-gray-400 w-full">
               No tasks listed under this filter index.
             </div>
@@ -191,6 +186,14 @@ const Lists = () => {
             ))
           )}
         </div>
+
+        {s.isLoadingTasks && s.activeListId && s.activeListId !== 'empty' && s.activeListId !== 'error' && (
+          <div className="fixed bottom-6 right-6 z-50">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#F2D9B3] bg-white/90 shadow-lg backdrop-blur-sm">
+              <Loader2 size={18} className="animate-spin text-[#F28C38]" />
+            </div>
+          </div>
+        )}
 
         {/* FIXED CHAT-STYLE BOTTOM INPUT PANEL */}
         <div className={`fixed bottom-0 right-0 p-6 bg-linear-to-t from-[#FDF6EC] via-[#FDF6EC] to-transparent pt-10 z-20 transition-all duration-300 ${

@@ -206,7 +206,6 @@ if (!token) {
     if (!token) {
       // Offline or not signed in: update locally and cache
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: updatedCompletedState } : t));
-      toast.push({ title: 'Offline', description: 'Task updated locally. Sign in to sync.', type: 'info' });
       return;
     }
 
@@ -385,10 +384,35 @@ if (!token) {
   };
 
   const handleAddTaskList = async (listName: string) => {
-    if (!listName || !listName.trim()) return;
+    const trimmedName = listName?.trim();
+    if (!trimmedName) return;
+
+    const fallbackListId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const fallbackListItem = { id: fallbackListId, label: trimmedName, active: true };
+
+    setSidebarItems(prev => {
+      const resetItems = prev.map(item => ({
+        ...item,
+        active: false,
+      }));
+
+      return [fallbackListItem, ...resetItems];
+    });
+
+    setTasks([]);
+    setActiveContext({
+      id: fallbackListId,
+      name: trimmedName,
+      type: 'personal',
+    });
 
     try {
       const token = localStorage.getItem('token');
+
+      if (!token) {
+        toast.push({ title: 'List added locally', description: 'Your new list is ready to use offline.', type: 'success' });
+        return;
+      }
 
       const response = await fetch('/api/lists', {
         method: 'POST',
@@ -397,46 +421,39 @@ if (!token) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: listName.trim(),
+          name: trimmedName,
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
-      if (!response.ok) {
-        throw new Error(data.error);
+      if (response.ok && data?.id) {
+        setSidebarItems(prev => prev.map(item => item.id === fallbackListId ? { ...item, id: data.id, label: data.name || trimmedName } : item));
+        setActiveContext({
+          id: data.id,
+          name: data.name || trimmedName,
+          type: 'personal',
+        });
+        try {
+          localStorage.setItem('lists', JSON.stringify([{ id: data.id, name: data.name || trimmedName }, ...sidebarItems.map(i => ({ id: i.id, name: i.label }))]));
+        } catch {}
+        return;
       }
 
-      setSidebarItems(prev => {
-        const resetItems = prev.map(item => ({
-          ...item,
-          active: false,
-        }));
-
-        return [
-          ...resetItems,
-          {
-            id: data.id,
-            label: data.name,
-            active: true,
-          },
-        ];
-      });
-
-      setActiveContext({
-        id: data.id,
-        name: data.name,
-        type: 'personal',
-      });
+      toast.push({ title: 'List added locally', description: 'The server was unavailable, so the list was added locally.', type: 'success' });
     } catch (error) {
       console.error(error);
+      toast.push({ title: 'List added locally', description: 'The server was unavailable, so the list was added locally.', type: 'success' });
     }
   };
 
   const handleSwitchList = (id: string | number) => {
-    setSidebarItems(prevItems => prevItems.map(item => ({ ...item, active: item.id === id })));
-    const selectedName = sidebarItems.find(item => item.id === id)?.label || "Task Workspace";
-    setActiveContext({ id, name: selectedName, type: 'personal' });
+    setSidebarItems(prevItems => {
+      const nextItems = prevItems.map(item => ({ ...item, active: item.id === id }));
+      const selectedItem = nextItems.find(item => item.id === id);
+      setActiveContext({ id, name: selectedItem?.label || 'Task Workspace', type: 'personal' });
+      return nextItems;
+    });
   };
 
   // Persist sidebar items to localStorage so lists survive refresh when unauthenticated

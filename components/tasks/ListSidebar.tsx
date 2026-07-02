@@ -120,7 +120,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center justify-between mb-5 px-2">
             <div className="flex items-center gap-2 font-semibold text-gray-700">
               <button onClick={() => setIsOpen(false)} className="hover:bg-gray-200 p-1 rounded-lg transition"><Menu size={18} /></button>
-              <span>Promptly</span>
+              <span>Promptly 🔔</span>
             </div>
             
             {/* UPDATED: Dynamic trigger switches between opening list or group popup cards */}

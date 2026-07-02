@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
 import { prisma } from '@/lib/prisma'
-import { normalizeTaskCategory } from '@/lib/taskCategory'
+import { classifyTaskCategory, normalizeTaskCategory } from '@/lib/taskCategory'
 
 function getUserIdFromRequest(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -90,8 +90,10 @@ export async function PATCH(
       updateData.priority = body.priority
     }
 
-    if (typeof body.category === 'string') {
-      updateData.category = normalizeTaskCategory(body.category)
+    if (typeof body.title === 'string' || typeof body.description === 'string' || typeof body.category === 'string') {
+      const nextTitle = typeof body.title === 'string' ? body.title : task.title
+      const nextDescription = typeof body.description === 'string' ? body.description : task.description || ''
+      updateData.category = await classifyTaskCategory(nextTitle, nextDescription)
     }
 
     if (typeof body.completed === 'boolean') {

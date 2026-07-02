@@ -28,15 +28,13 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEditTrigger, onDeleteTrigge
   const [isToggling, setIsToggling] = useState(false);
 
   const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${task.title}"?`)) {
-      try {
-        setIsDeleting(true);
-        await onDeleteTrigger(task.id);
-      } catch (error) {
-        console.error("Delete failed:", error);
-      } finally {
-        setIsDeleting(false);
-      }
+    try {
+      setIsDeleting(true);
+      await onDeleteTrigger(task.id);
+    } catch (error) {
+      console.error("Delete failed:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
