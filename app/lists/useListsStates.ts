@@ -7,6 +7,8 @@ export type SidebarItem = {
   id: string | number;
   label: string;
   active: boolean;
+  isOwner?: boolean;
+  isCollaborator?: boolean;
 };
 
 type MemberItem = { id: string; name: string; };
@@ -246,6 +248,11 @@ if (!token) {
 
       const token = localStorage.getItem('token');
 
+      if (!token) {
+        setTasks([]);
+        throw new Error('No auth token');
+      }
+
       const response = await fetch(
         `/api/lists/${targetId}?type=${type}`,
         {
@@ -255,13 +262,18 @@ if (!token) {
         }
       );
 
-      if (!token) {
-        setTasks([]);
-        throw new Error('No auth token');
-      }
-
       if (!response.ok) {
-        throw new Error('Failed to fetch tasks');
+        const err = await response.json().catch(() => ({}));
+        console.warn(`Failed to fetch tasks: ${err?.error || response.status}`);
+        
+        // Try to load from cache on error
+        const cached = localStorage.getItem(`tasks:${targetId}`);
+        if (cached) {
+          setTasks(JSON.parse(cached));
+        } else {
+          setTasks([]);
+        }
+        return;
       }
 
       const data = await response.json();
@@ -383,6 +395,59 @@ if (!token) {
       );
     } catch (error) {
       console.error("Backend Task Deletion Error:", error);
+    }
+  };
+
+  const handleDeleteList = async (listId: string | number) => {
+    const remainingItems = sidebarItems.filter(item => item.id !== listId);
+
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        setSidebarItems(remainingItems);
+        if (activeContext.id === listId) {
+          if (remainingItems.length > 0) {
+            const nextList = remainingItems[0];
+            setActiveContext({ id: nextList.id, name: nextList.label, type: 'personal' });
+          } else {
+            setActiveContext({ id: 'empty', name: 'No Lists Found', type: 'personal' });
+          }
+          setTasks([]);
+        }
+        return;
+      }
+
+      const response = await fetch(`/api/lists/${listId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to delete list');
+      }
+
+      setSidebarItems(remainingItems);
+
+      if (activeContext.id === listId) {
+        if (remainingItems.length > 0) {
+          const nextList = remainingItems[0];
+          setActiveContext({ id: nextList.id, name: nextList.label, type: 'personal' });
+        } else {
+          setActiveContext({ id: 'empty', name: 'No Lists Found', type: 'personal' });
+        }
+        setTasks([]);
+      }
+
+      toast.push({ title: 'List deleted', description: 'The list was removed successfully.', type: 'success' });
+    } catch (error) {
+      console.error('Error deleting list:', error);
+      toast.push({ title: 'Delete failed', description: 'Unable to delete the list right now.', type: 'error' });
+      throw error;
     }
   };
 
@@ -542,7 +607,7 @@ if (!token) {
     editingTask, setEditingTask, sidebarItems, activeListId, activeListName, tasks,
     newTaskTitle, setNewTaskTitle, isLoadingTasks, isSubmittingTask, fileInputRef,
     imageInputRef, selectedFile, setSelectedFile, isRecording, audioBlob, setAudioBlob,
-    handleAddTaskList, handleSwitchList, toggleRecording, handleCreateTask, handleSaveTaskEdits,
+    handleAddTaskList, handleSwitchList, handleDeleteList, toggleRecording, handleCreateTask, handleSaveTaskEdits,
     viewMode, setViewMode, groupItems, setGroupItems, setActiveContext, isLoadingGroups,
     handleDeleteTask, handleToggleComplete
   };

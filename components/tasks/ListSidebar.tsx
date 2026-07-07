@@ -1,6 +1,6 @@
 'use client';
-import React, { useState } from 'react';
-import { Menu, Plus, Search, LogOut, X, FolderPlus, User, Users, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, Plus, Search, LogOut, X, FolderPlus, User, Users, ChevronDown, ChevronRight, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { SidebarItem } from '@/app/lists/useListsStates';
 
@@ -13,6 +13,7 @@ type SidebarProps = {
   sidebarItems: SidebarItem[];
   onSwitchList: (id: number | string) => void;
   onAddList: (listName: string) => void;
+  onDeleteList: (id: number | string) => Promise<void> | void;
   viewMode: 'personal' | 'group';
   setViewMode: (mode: 'personal' | 'group') => void;
   groupItems: GroupItem[];
@@ -27,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarItems,
   onSwitchList,
   onAddList,
+  onDeleteList,
   viewMode,
   setViewMode,
   groupItems,
@@ -43,6 +45,14 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Input string text state trackers
   const [newListName, setNewListName] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
+  
+  // Logout loading state
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Delete confirmation modal state
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string | number; name: string } | null>(null);
+  const [isDeletingList, setIsDeletingList] = useState(false);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
 
   const handleListSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +60,28 @@ const Sidebar: React.FC<SidebarProps> = ({
     onAddList(newListName.trim());
     setNewListName('');
     setIsListModalOpen(false);
+  };
+
+  useEffect(() => {
+    if (!deleteNotice) return;
+
+    const timer = window.setTimeout(() => {
+      setDeleteNotice(null);
+    }, 2500);
+
+    return () => window.clearTimeout(timer);
+  }, [deleteNotice]);
+
+  const handleDeleteList = async (listId: string | number) => {
+    try {
+      setIsDeletingList(true);
+      await onDeleteList(listId);
+      setDeleteConfirmation(null);
+    } catch (error) {
+      console.error('Error deleting list:', error);
+    } finally {
+      setIsDeletingList(false);
+    }
   };
 
   // NEW: Group view form submission controller pipeline
@@ -112,6 +144,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
+      {/* Loading Overlay during logout */}
+      {isLoggingOut && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+            <p className="text-sm text-gray-600 font-medium">Logging out...</p>
+          </div>
+        </div>
+      )}
+
       <aside className={`bg-[#F3F3F4] border-r sticky top-0 h-screen border-gray-200 flex flex-col justify-between p-4 rounded-r-3xl transition-all duration-300 ease-in-out shrink-0 z-30 ${
         isOpen ? 'w-64 opacity-100' : 'w-0 p-0 opacity-0 border-none overflow-hidden'
       }`}>
@@ -146,16 +188,40 @@ const Sidebar: React.FC<SidebarProps> = ({
               {viewMode === 'personal' ? 'Your Task Lists' : 'Your Groups'}
             </h3>
             
+            {deleteNotice && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700 flex items-start gap-2">
+                <AlertTriangle size={14} className="mt-0.25 shrink-0" />
+                <span>{deleteNotice}</span>
+              </div>
+            )}
+
             <nav className="space-y-1 max-h-[50vh] overflow-y-auto pr-1">
               {viewMode === 'personal' ? (
                 sidebarItems?.map((item) => (
-                  <button
+                  <div
                     key={item.id}
-                    onClick={() => onSwitchList(item.id)}
-                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${item.active ? 'bg-white font-medium text-gray-900 shadow-sm' : 'text-gray-600 hover:bg-gray-200/50'}`}
+                    className={`flex items-center justify-between gap-1 px-2 py-1 rounded-lg group transition-colors ${item.active ? 'bg-white shadow-sm' : 'hover:bg-gray-200/50'}`}
                   >
-                    {item.label}
-                  </button>
+                    <button
+                      onClick={() => onSwitchList(item.id)}
+                      className={`flex-1 text-left px-1 py-1.5 text-sm rounded transition-colors ${item.active ? 'font-medium text-gray-900' : 'text-gray-600'}`}
+                    >
+                      {item.label}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (item.isOwner !== false) {
+                          setDeleteConfirmation({ id: item.id, name: item.label });
+                        } else {
+                          setDeleteNotice('Only the owner can delete this list.');
+                        }
+                      }}
+                      className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-all ${item.isOwner !== false ? 'text-gray-400 hover:text-red-600 hover:bg-red-50' : 'text-gray-300 cursor-not-allowed'}`}
+                      title={item.isOwner !== false ? 'Delete list' : 'Only owner can delete'}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 )) || <div className="text-xs text-gray-400 px-3 py-2">No personal lists found.</div>
               ) : isLoadingGroups ? (
                 <div className="flex items-center gap-2 px-3 py-4 text-xs text-gray-400">
@@ -197,6 +263,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         <div className={`pt-4 border-t border-gray-200 px-2 ${isOpen ? "block" : "hidden"}`}>
           <button onClick={() => {
+            setIsLoggingOut(true);
             localStorage.removeItem('token');
             localStorage.removeItem('username');
             localStorage.removeItem('name');
@@ -204,7 +271,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             Object.keys(localStorage).forEach(key => {
               if (key.startsWith('tasks:')) localStorage.removeItem(key);
             });
-            router.push('/');
+            setTimeout(() => {
+              router.push('/');
+            }, 1500);
           }} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 bg-red-50/50 hover:bg-red-50 rounded-xl transition-all shadow-sm"><LogOut size={16} /> <span>Log out</span></button>
         </div>
       </aside>
@@ -245,6 +314,51 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <button type="submit" disabled={!newGroupName.trim()} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm">Form Group</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE LIST CONFIRMATION MODAL */}
+      {deleteConfirmation && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl relative mx-4">
+            <button onClick={() => setDeleteConfirmation(null)} className="absolute right-4 top-4 p-1 text-gray-400 hover:text-gray-600"><X size={18} /></button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-50 text-red-600 rounded-xl"><Trash2 size={20} /></div>
+              <div>
+                <h3 className="font-bold text-lg text-gray-900">Delete List?</h3>
+                <p className="text-xs text-gray-400 mt-0.5">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete <span className="font-semibold text-gray-900">"{deleteConfirmation.name}"</span>? All tasks in this list will be permanently deleted.
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <button 
+                onClick={() => setDeleteConfirmation(null)} 
+                disabled={isDeletingList}
+                className="px-4 py-2 border text-gray-600 rounded-xl text-xs font-semibold hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleDeleteList(deleteConfirmation.id)} 
+                disabled={isDeletingList}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold shadow-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {isDeletingList ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={14} />
+                    Delete List
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

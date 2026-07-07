@@ -113,6 +113,7 @@ const Lists = () => {
           sidebarItems={s.sidebarItems} 
           onSwitchList={s.handleSwitchList} 
           onAddList={s.handleAddTaskList} 
+          onDeleteList={s.handleDeleteList}
           viewMode={s.viewMode}
           setViewMode={s.setViewMode}
           groupItems={s.groupItems}

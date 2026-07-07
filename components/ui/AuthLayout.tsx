@@ -10,20 +10,23 @@ interface AuthLayoutProps {
 export default function AuthLayout({ children, headline }: AuthLayoutProps) {
   return (
     <div className="relative min-h-screen bg-orange-50 flex flex-col justify-between overflow-hidden font-sans select-none">
+      {/* Subtle background decorations */}
+      <div className="absolute top-20 right-0 w-96 h-96 bg-orange-100 rounded-full opacity-20 blur-3xl"></div>
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-orange-100 rounded-full opacity-15 blur-3xl"></div>
       
       {/* Navbar */}
       <header className="relative z-10 w-full flex items-center px-12 py-6">
-        <div className="flex items-center space-x-2 text-3xl font-bold text-black tracking-tight">
+        <div className="flex items-center space-x-2 text-5xl font-bold text-black tracking-tight">
           <span>Promptly</span>
           <span className="text-2xl">🔔</span>
         </div>
 
-        <nav className="hidden md:flex items-center space-x-10 bg-white/60 backdrop-blur-md px-10 py-2.5 rounded-full shadow-sm border border-white/40 text-sm font-medium text-gray-700 mx-auto mr-80">
+        {/* <nav className="hidden md:flex items-center space-x-10 bg-white/60 backdrop-blur-md px-10 py-2.5 rounded-full shadow-sm border border-white/40 text-sm font-medium text-gray-700 mx-auto mr-80">
           <a href="#" className="hover:text-black transition-colors px-5">Features</a>
           <a href="#" className="hover:text-black transition-colors px-5">Pricing</a>
           <a href="#" className="hover:text-black transition-colors px-5">Blog</a>
           <a href="#" className="hover:text-black transition-colors px-5">About</a>
-        </nav>
+        </nav> */}
       </header>
 
       <main className="relative z-10 flex-1 grid grid-cols-1 lg:grid-cols-12 items-center px-12 xl:px-24 max-w-7xl w-full mx-auto pb-12">

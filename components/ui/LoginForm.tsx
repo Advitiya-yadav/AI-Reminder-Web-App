@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/ToastProvider';
 import { syncLocalTasksWithServer } from '@/lib/localSync';
 import { useRouter } from 'next/navigation';
@@ -9,9 +9,25 @@ export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [showProgress, setShowProgress] = useState(false);
 
   const router = useRouter();
   const toast = useToast();
+
+  // Animate progress bar
+  useEffect(() => {
+    if (!showProgress) return;
+
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 90) return prev;
+        return prev + Math.random() * 30;
+      });
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, [showProgress]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,16 +50,24 @@ export default function LoginForm() {
       if (response.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('username', data.username);
+        
+        // Start progress animation
+        setShowProgress(true);
+        setProgress(10);
+        
         // attempt to sync any locally cached tasks now that we have a token
         try {
-          syncLocalTasksWithServer(data.token).then(res => {
-            if (res && res.synced > 0) {
-              toast.push({ title: 'Synced tasks', description: `${res.synced} local tasks uploaded`, type: 'success' });
-            }
-          }).catch(() => {});
+          syncLocalTasksWithServer(data.token).catch(() => {});
         } catch {}
-        router.push('/lists');
-        router.refresh();
+        
+        // Complete progress and redirect
+        setTimeout(() => {
+          setProgress(100);
+          setTimeout(() => {
+            router.push('/lists');
+            router.refresh();
+          }, 300);
+        }, 500);
       } else {
         toast.push({ title: 'Sign in failed', description: data.error || 'Invalid credentials', type: 'error' });
       }
@@ -56,7 +80,18 @@ export default function LoginForm() {
   };
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
+    <>
+      {/* Loading Overlay during transition */}
+      {progress >= 90 && showProgress && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-40 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+            <p className="text-sm text-gray-600 font-medium">Taking you to your tasks...</p>
+          </div>
+        </div>
+      )}
+
+      <form className="space-y-5" onSubmit={handleSubmit}>
       {/* This is the EMAIL field*/}
       <div>
         <label htmlFor="email" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -157,5 +192,6 @@ export default function LoginForm() {
         </button>
       </div>
     </form>
+    </>
   );
 }

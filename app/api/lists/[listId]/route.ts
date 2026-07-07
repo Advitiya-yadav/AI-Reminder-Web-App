@@ -112,3 +112,72 @@ export async function GET(
     )
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ listId: string }> }
+) {
+  try {
+    const userId = getUserIdFromRequest(req)
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { listId } = await params
+
+    const list = await prisma.list.findUnique({
+      where: {
+        id: listId,
+      },
+    })
+
+    if (!list) {
+      return NextResponse.json(
+        { error: 'List not found' },
+        { status: 404 }
+      )
+    }
+
+    // Only the owner can delete the list
+    if (list.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Only list owner can delete' },
+        { status: 403 }
+      )
+    }
+
+    // Delete all tasks in the list first
+    await prisma.task.deleteMany({
+      where: {
+        listId,
+      },
+    })
+
+    // Delete list permissions
+    await prisma.listPermission.deleteMany({
+      where: {
+        listId,
+      },
+    })
+
+    // Delete the list
+    await prisma.list.delete({
+      where: {
+        id: listId,
+      },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error(error)
+
+    return NextResponse.json(
+      { error: 'Failed to delete list' },
+      { status: 500 }
+    )
+  }
+}
