@@ -5,6 +5,15 @@ import { useToast } from '@/components/ui/ToastProvider';
 import { syncLocalTasksWithServer } from '@/lib/localSync';
 import { useRouter } from 'next/navigation';
 
+const normalizeDisplayName = (value: unknown) => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.toLowerCase();
+  if (normalized === 'undefined' || normalized === 'null') return '';
+  return trimmed;
+};
+
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,8 +57,10 @@ export default function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
+        const displayName = normalizeDisplayName(data.user?.username || data.username) || normalizeDisplayName(data.user?.email?.split('@')[0]) || 'User';
         localStorage.setItem('token', data.token);
-        localStorage.setItem('username', data.username);
+        localStorage.setItem('username', displayName);
+        localStorage.setItem('name', displayName);
         
         // Start progress animation
         setShowProgress(true);

@@ -10,6 +10,15 @@ import { useListsState } from './useListsStates';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
+const normalizeDisplayName = (value: unknown) => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.toLowerCase();
+  if (normalized === 'undefined' || normalized === 'null') return '';
+  return trimmed;
+};
+
 const Lists = () => {
   const s = useListsState();
   const router = useRouter();
@@ -31,9 +40,38 @@ const Lists = () => {
       return;
     }
 
-    const storedName = localStorage.getItem('name');
-    if (storedName) {
+    const storedName = normalizeDisplayName(localStorage.getItem('username') || localStorage.getItem('name'));
+    if (storedName && storedName !== 'User') {
       setDisplayedName(storedName);
+    } else {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1] || '')) as { userId?: string; email?: string };
+        if (payload.userId) {
+          fetch(`/api/users/${payload.userId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+            .then((res) => res.ok ? res.json() : null)
+            .then((data) => {
+              const fetchedName = normalizeDisplayName(data?.username) || normalizeDisplayName(payload.email?.split('@')[0]) || 'User';
+              setDisplayedName(fetchedName);
+              localStorage.setItem('username', fetchedName);
+              localStorage.setItem('name', fetchedName);
+            })
+            .catch(() => {
+              const fallbackName = normalizeDisplayName(payload.email?.split('@')[0]) || 'User';
+              setDisplayedName(fallbackName);
+              localStorage.setItem('username', fallbackName);
+              localStorage.setItem('name', fallbackName);
+            });
+        } else {
+          const fallbackName = normalizeDisplayName(payload.email?.split('@')[0]) || 'User';
+          setDisplayedName(fallbackName);
+          localStorage.setItem('username', fallbackName);
+          localStorage.setItem('name', fallbackName);
+        }
+      } catch {
+        setDisplayedName('User');
+      }
     }
 
     setAuthChecked(true);

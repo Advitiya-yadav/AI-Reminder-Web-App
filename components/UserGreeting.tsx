@@ -4,6 +4,15 @@ import { useEffect, useState } from 'react';
 import { getGreeting } from '@/lib/localization';
 import { Globe } from 'lucide-react';
 
+const normalizeDisplayName = (value: unknown) => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.toLowerCase();
+  if (normalized === 'undefined' || normalized === 'null') return '';
+  return trimmed;
+};
+
 interface UserGreetingProps {
   userId: string;
   token: string;
@@ -22,7 +31,8 @@ export default function UserGreeting({ userId, token }: UserGreetingProps) {
         });
         if (res.ok) {
           const data = await res.json();
-          setUsername(data.username || 'User');
+          const fetchedName = normalizeDisplayName(data.username) || normalizeDisplayName(data.email?.split('@')[0]) || 'User';
+          setUsername(fetchedName);
           setLanguage(data.language || 'en');
         }
       } catch (err) {

@@ -7,9 +7,17 @@ import { syncLocalTasksWithServer } from '@/lib/localSync';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 
+const normalizeDisplayName = (value: unknown) => {
+  if (typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const normalized = trimmed.toLowerCase();
+  if (normalized === 'undefined' || normalized === 'null') return '';
+  return trimmed;
+};
+
 export default function SignUpForm() {
-  // NEW: Added state tracking for the username field
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [countryData, setCountryData] = useState({ dialCode: '', format: '' });
@@ -44,11 +52,11 @@ export default function SignUpForm() {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: name.trim(), // NEW: Sent smoothly inside your signup payload package
-          email, 
-          password, 
-          phone: `+${phone}`
+        body: JSON.stringify({
+          username: username.trim(),
+          email,
+          password,
+          phone: `+${phone}`,
         }),
       });
 
@@ -56,8 +64,10 @@ export default function SignUpForm() {
 
       if (response.ok) {
         toast.push({ title: 'Account created', description: 'Account created successfully!', type: 'success' });
+        const displayName = normalizeDisplayName(data.user?.username) || normalizeDisplayName(username.trim()) || normalizeDisplayName(email.split('@')[0]) || 'User';
         localStorage.setItem('token', data.token);
-        localStorage.setItem('name', name);
+        localStorage.setItem('username', displayName);
+        localStorage.setItem('name', displayName);
         try { syncLocalTasksWithServer(data.token).catch(() => {}); } catch {}
         router.push('/lists');
         router.refresh();
@@ -83,12 +93,12 @@ export default function SignUpForm() {
           Name
         </label>
         <input
-          id="name"
+          id="username"
           type="text"
           required
-          value={name}
+          value={username}
           disabled={isLoading}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
           placeholder="What should we call you?"
           className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm transition-all duration-200 placeholder-gray-300 focus:outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-400"
         />

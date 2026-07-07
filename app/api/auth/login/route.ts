@@ -53,14 +53,18 @@ export async function POST(req: Request) {
       }
     )
 
+    const displayName = user.username || user.email.split('@')[0]
+
     return NextResponse.json(
       {
         message: 'Login successful',
         token,
+        username: displayName,
         user: {
           id: user.id,
           email: user.email,
           phoneNumber: user.phoneNumber,
+          username: displayName,
         },
       },
       { status: 200 }
