@@ -62,17 +62,17 @@ export default function UserGreeting({ userId, token }: UserGreetingProps) {
   if (loading) return <div className="text-lg font-semibold text-gray-600">Loading...</div>;
 
   return (
-    <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-3 sm:p-6 text-white mb-6 shadow-lg">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">{greeting}, {username}! 👋</h1>
-          <p className="text-blue-100 text-sm sm:text-base mt-2">Welcome back to your task manager</p>
+    <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white mb-6 shadow-lg">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{greeting}, {username}! 👋</h1>
+          <p className="text-blue-100 mt-2">Welcome back to your task manager</p>
         </div>
-        <div className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+        <div className="w-12 h-12">
           <img
             src={logoSrc}
             alt="Promptly logo"
-            className="h-full w-full object-contain opacity-95"
+            className="h-12 w-12 object-contain opacity-95"
             onError={(e) => {
               const idx = logoCandidates.indexOf(logoSrc);
               const next = logoCandidates[idx + 1];

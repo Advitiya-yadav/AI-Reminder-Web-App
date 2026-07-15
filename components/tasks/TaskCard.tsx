@@ -51,14 +51,14 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEditTrigger, onDeleteTrigge
   };
 
   return (
-    <div className={`animate-slide-in-bottom bg-white border border-gray-300 rounded-2xl p-3 sm:p-4 text-left shadow-sm transition-all duration-200 ${
+    <div className={`animate-slide-in-bottom bg-white border border-gray-300 rounded-2xl p-4 text-left shadow-sm transition-all duration-200 ${
       isDeleting ? 'opacity-50 pointer-events-none' : ''
     } ${task.completed ? 'border-emerald-200 bg-emerald-50/10' : ''}`} style={{ willChange: 'transform, opacity' }}>
       {/* Entrance animation */}
       
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-3">
+      <div className="flex justify-between items-start mb-2 gap-3">
         {/* NEW: Left-side Alignment layout holding your click Checkbox */}
-        <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+        <div className="flex items-start gap-3 flex-1">
           <button 
             onClick={handleCheckboxClick}
             disabled={isToggling}
@@ -77,11 +77,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEditTrigger, onDeleteTrigge
           </button>
 
           {/* Task Heading Text - Dims and strikes through when checked off */}
-          <span className={`font-medium text-sm transition-all duration-150 break-words ${
+          <span className={`font-medium text-sm transition-all duration-150 ${
             task.completed ? 'text-gray-400 line-through' : 'text-gray-800'
           }`}>
             {task.title}
           </span>
+          <div className="flex gap-2 text-[11px] font-medium text-gray-700 pl-7">
+        <span className="bg-[#EAEAEA] px-2.5 py-1 rounded-md">{task.date || 'No Date'}</span>
+        <span className="bg-[#EAEAEA] px-2.5 py-1 rounded-md">{task.time || 'No Time'}</span>
+        <span className="bg-[#FFF3E6] text-[#8A4B12] px-2.5 py-1 rounded-md capitalize">{task.category || 'productivity'}</span>
+        {task.reminderOffset && (
+          <span className="bg-orange-100 text-orange-700 px-2.5 py-1 rounded-md">
+            Alert: {task.reminderOffset} before
+          </span>
+        )}
+      </div>
         </div>
         
         {/* Action button controls */}
@@ -106,17 +116,10 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEditTrigger, onDeleteTrigge
         </div>
       </div>
 
-      {/* Metadata Badges - Responsive wrapping */}
-      <div className="flex flex-wrap gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-gray-700 pl-6 sm:pl-8 mt-2">
-        {task.date && <span className="bg-[#EAEAEA] px-2 py-1 rounded-md">{task.date}</span>}
-        {task.time && <span className="bg-[#EAEAEA] px-2 py-1 rounded-md">{task.time}</span>}
-        {task.category && <span className="bg-[#FFF3E6] text-[#8A4B12] px-2 py-1 rounded-md capitalize">{task.category}</span>}
-        {task.reminderOffset && (
-          <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-md">
-            Alert: {task.reminderOffset}
-          </span>
-        )}
-      </div>
+      
+
+      {/* Metadata Badges */}
+      
     </div>
   );
 };
