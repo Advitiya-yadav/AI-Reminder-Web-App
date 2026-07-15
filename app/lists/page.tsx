@@ -22,6 +22,9 @@ const normalizeDisplayName = (value: unknown) => {
 const Lists = () => {
   const s = useListsState();
   const router = useRouter();
+
+  // The main authenticated dashboard page for tasks and lists.
+  // This component handles post-login redirect state and user display name.
   
   const totalTasks = s.tasks.length;
   const completedTasks = s.tasks.filter(task => task.completed).length;
@@ -38,8 +41,12 @@ const Lists = () => {
     const oauthToken = searchParams.get('token');
     const oauthUsername = searchParams.get('username');
 
+    // If Google OAuth redirected here with a token, store it locally and reload.
+
     if (oauthToken) {
+      // Store the Google-issued JWT token locally so the client is authenticated.
       localStorage.setItem('token', oauthToken);
+
       if (oauthUsername) {
         const normalized = normalizeDisplayName(oauthUsername);
         if (normalized) {
@@ -48,10 +55,12 @@ const Lists = () => {
           setDisplayedName(normalized);
         }
       }
+
       if (typeof window !== 'undefined') {
-        window.location.href = '/lists';
-        return;
+        // Remove the token query param from the URL without forcing a full page reload.
+        window.history.replaceState({}, '', '/lists');
       }
+
       setAuthChecked(true);
       return;
     }
@@ -127,7 +136,13 @@ const Lists = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [s]);
 
-  if (!authChecked) return null;
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FDF6EC] text-gray-500">
+        Loading your workspace...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-[#FDF6EC] font-sans antialiased text-gray-800 relative">

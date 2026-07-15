@@ -33,6 +33,9 @@ export const useListsState = () => {
   const [greeting, setGreeting] = useState("Good morning");
   const [currentDate, setCurrentDate] = useState("");
 
+  // Shared state hook for the /lists page.
+  // This centralizes list and task data, sidebar state, and user interactions.
+
   const [isAiOpen, setIsAiOpen] = useState(false);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -103,7 +106,8 @@ export const useListsState = () => {
     }
   }, [viewMode]);
 
-  // Fetch all personal folders for the sidebar when the component mounts
+  // Fetch personal task lists from the backend on initial load.
+  // This uses the JWT token stored in localStorage or the token passed from OAuth.
   useEffect(() => {
     const fetchAllLists = async () => {
       try {

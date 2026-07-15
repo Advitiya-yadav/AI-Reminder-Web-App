@@ -5,6 +5,8 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_REDIRECT_URL
 const STATE_COOKIE_NAME = 'google_oauth_state'
 
+// Build the current application base URL from the incoming request.
+// This is important for Vercel deployments where the host may change.
 function resolveBaseUrl(requestUrl: string, headers: Headers) {
   const forwardedProto = headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
   const forwardedHost = headers.get('x-forwarded-host')?.split(',')[0]?.trim()
@@ -28,6 +30,9 @@ function resolveBaseUrl(requestUrl: string, headers: Headers) {
 function resolveRedirectUri(requestUrl: string, headers: Headers, configuredUri?: string) {
   const requestOrigin = resolveBaseUrl(requestUrl, headers)
   const fallbackUri = `${requestOrigin}/api/auth/google/callback`
+
+  // Validate the configured redirect URI happens to match the current origin.
+  // If it does not, fall back to the request host so Google callback remains valid.
 
   if (!configuredUri) {
     return fallbackUri
@@ -57,10 +62,14 @@ export async function GET(req: Request) {
   }
 
   const redirectUri = resolveRedirectUri(req.url, req.headers, GOOGLE_REDIRECT_URI)
-
+  // The redirect URI that Google uses after login must be registered in the
+  // Google Cloud OAuth client settings for the current domain.
+  // Example: https://ai-reminder-web-app-xi.vercel.app/api/auth/google/callback
   const state = randomBytes(16).toString('hex')
   const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
   authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID)
+  // Build the Google authorization request URL.
+  // The redirect_uri must match the authorized redirect URI in Google Cloud.
   authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('scope', 'openid email profile')
   authUrl.searchParams.set('access_type', 'offline')

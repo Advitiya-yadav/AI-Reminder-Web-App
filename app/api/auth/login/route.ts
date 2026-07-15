@@ -4,12 +4,16 @@ import jwt from 'jsonwebtoken'
 
 import { prisma } from '@/lib/prisma'
 
+// API route: /api/auth/login
+// This route handles traditional email/password authentication.
+// It validates credentials against the database and returns a JWT token when valid.
 export async function POST(req: Request) {
   try {
     const body = await req.json()
 
     const { email, password } = body
 
+    // Basic request validation: both fields are required.
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },

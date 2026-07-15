@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Promptly 🔔",
+  title: "Promptly",
   description: "Your AI reminders",
 };
 

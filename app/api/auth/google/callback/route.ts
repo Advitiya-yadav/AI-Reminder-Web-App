@@ -8,6 +8,10 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || process.env.GOOGL
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key'
 const STATE_COOKIE_NAME = 'google_oauth_state'
 
+// API route: /api/auth/google/callback
+// Handles the callback from Google OAuth, exchanges the authorization code
+// for tokens, obtains user info, and then logs the user into the app.
+
 function resolveBaseUrl(requestUrl: string, headers: Headers) {
   const forwardedProto = headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
   const forwardedHost = headers.get('x-forwarded-host')?.split(',')[0]?.trim()
@@ -75,6 +79,7 @@ function resolveAppUrl(requestUrl: string, headers: Headers, configuredUrl?: str
 
 async function fetchGoogleToken(code: string, redirectUri: string) {
   const body = new URLSearchParams({
+    // Exchange authorization code for access token. This is the OAuth token exchange step.
     code,
     client_id: GOOGLE_CLIENT_ID!,
     client_secret: GOOGLE_CLIENT_SECRET!,
@@ -117,6 +122,7 @@ export async function GET(req: Request) {
   const storedState = stateCookie?.split('=')[1]
 
   if (!code || !state || !storedState || state !== storedState) {
+    // Reject failed or manipulated OAuth callbacks using state validation.
     return NextResponse.json({ error: 'Invalid OAuth state or missing code' }, { status: 400 })
   }
 
@@ -138,6 +144,8 @@ export async function GET(req: Request) {
   const email = userInfo.email as string
   const username = userInfo.name || email.split('@')[0]
 
+  // If the email already exists, sign in the existing user.
+  // Otherwise, create a new user account for this Google email.
   let user = await prisma.user.findUnique({
     where: { email },
   })
@@ -161,6 +169,10 @@ export async function GET(req: Request) {
     { expiresIn: '7d' }
   )
 
+  // Build the final application redirect after successful login.
+  // If the configured GOOGLE_OAUTH_SUCCESS_REDIRECT does not use the current
+  // request origin, this falls back to the current host to avoid mismatched
+  // redirect URLs.
   const successRedirectUrl = resolveAppUrl(req.url, req.headers, process.env.GOOGLE_OAUTH_SUCCESS_REDIRECT, '/lists')
   const redirectUrl = new URL(successRedirectUrl)
   redirectUrl.searchParams.set('token', token)
