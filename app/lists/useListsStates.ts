@@ -463,7 +463,9 @@ export const useListsState = () => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data?.error || 'Failed to delete list');
+        const errorMsg = data?.error || `Failed to delete list (${response.status})`;
+        console.error('Delete list error:', errorMsg, data);
+        throw new Error(errorMsg);
       }
 
       setSidebarItems(remainingItems);
@@ -480,8 +482,9 @@ export const useListsState = () => {
 
       toast.push({ title: 'List deleted', description: 'The list was removed successfully.', type: 'success' });
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unable to delete the list right now.';
       console.error('Error deleting list:', error);
-      toast.push({ title: 'Delete failed', description: 'Unable to delete the list right now.', type: 'error' });
+      toast.push({ title: 'Delete failed', description: errorMsg, type: 'error' });
       throw error;
     }
   };
