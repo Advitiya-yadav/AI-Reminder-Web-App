@@ -331,33 +331,11 @@ export const useListsState = () => {
         return;
       }
 
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        body: formData,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const responseText = await response.text();
-      let task: any = {}
-      try {
-        task = JSON.parse(responseText);
-      } catch {
-        task = { error: responseText };
-      }
-
-      if (!response.ok) {
-        toast.push({
-          title: 'Create failed',
-          description: task?.error || `Failed to create task (${response.status})`,
-          type: 'error',
-        });
-        return;
-      }
-
-      const newTask: Task = {
-        id: task.id || Date.now().toString(),
-        title: task.title || newTaskTitle.trim(),
-        category: task.category || 'productivity',
+      // Optimistic update - add task immediately to UI
+      const optimisticTask: Task = {
+        id: Date.now().toString(),
+        title: newTaskTitle.trim(),
+        category: inferTaskCategory(newTaskTitle.trim()) || 'productivity',
         currentProgress: 0,
         totalProgress: 1,
         completed: false,
@@ -366,21 +344,68 @@ export const useListsState = () => {
         time: 'Just now',
       };
 
-      setTasks((prevTasks) => [...prevTasks, newTask]);
+      setTasks((prevTasks) => [...prevTasks, optimisticTask]);
       setNewTaskTitle('');
       setSelectedFile(null);
+      setIsSubmittingTask(false);
+
+      // Send to backend in background (don't wait for response)
+      fetch('/api/tasks', {
+        method: 'POST',
+        body: formData,
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(async (response) => {
+          const responseText = await response.text();
+          let task: any = {}
+          try {
+            task = JSON.parse(responseText);
+          } catch {
+            task = { error: responseText };
+          }
+
+          if (!response.ok) {
+            toast.push({
+              title: 'Create failed',
+              description: task?.error || `Failed to create task (${response.status})`,
+              type: 'error',
+            });
+            // Remove optimistic task on error
+            setTasks(prev => prev.filter(t => t.id !== optimisticTask.id));
+            return;
+          }
+
+          // Update optimistic task with real server data
+          if (task.id) {
+            setTasks(prev => prev.map(t => t.id === optimisticTask.id ? { ...t, id: task.id } : t));
+          }
+        })
+        .catch((error) => {
+          console.error("Background sync error:", error);
+          // Task stays in UI even if sync fails - it's cached locally
+        });
     } catch (error) {
       console.error("Creation Error:", error);
       toast.push({ title: 'Create failed', description: 'Unable to create task. Please try again.', type: 'error' });
-    } finally {
       setIsSubmittingTask(false);
     }
   };
 
   // NEW API Call: Task Deletion handler targeting unique identifier route parameter mapping
   const handleDeleteTask = async (taskId: string) => {
+    // Optimistic update - remove immediately
+    const taskToRestore = tasks.find(t => t.id === taskId);
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+
     try {
       const token = localStorage.getItem('token');
+
+      if (!token) {
+        toast.push({ title: 'Not signed in', description: 'You must sign in to delete tasks.', type: 'error' });
+        // Restore task on error
+        if (taskToRestore) setTasks(prev => [...prev, taskToRestore]);
+        return;
+      }
 
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: 'DELETE',
@@ -389,17 +414,22 @@ export const useListsState = () => {
         },
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Server rejected deletion request.');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMsg = errorData?.error || `Failed to delete (${response.status})`;
+        toast.push({ title: 'Delete failed', description: errorMsg, type: 'error' });
+        // Restore task on error
+        if (taskToRestore) setTasks(prev => [...prev, taskToRestore]);
+        return;
       }
 
-      setTasks(prev =>
-        prev.filter(task => task.id !== taskId)
-      );
+      // Success - task already removed from UI
+      toast.push({ title: 'Task deleted', description: '', type: 'success' });
     } catch (error) {
       console.error("Backend Task Deletion Error:", error);
+      toast.push({ title: 'Delete failed', description: 'Network error. Please try again.', type: 'error' });
+      // Restore task on error
+      if (taskToRestore) setTasks(prev => [...prev, taskToRestore]);
     }
   };
 

@@ -199,10 +199,16 @@ export async function DELETE(
     }
 
     if (task.list.userId !== userId) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      )
+      // Allow collaborators with canEdit permission to delete tasks
+      const perm = await prisma.listPermission.findFirst({
+        where: { listId: task.listId, friendId: userId, canEdit: true },
+      });
+      if (!perm) {
+        return NextResponse.json(
+          { error: 'Forbidden: you do not have permission to delete this task' },
+          { status: 403 }
+        )
+      }
     }
 
     await prisma.task.delete({
