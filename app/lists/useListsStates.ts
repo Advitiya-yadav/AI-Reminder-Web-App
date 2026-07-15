@@ -151,7 +151,7 @@ if (!token) {
           setSidebarItems([]);
           setActiveContext({
             id: 'empty',
-            name: 'Sign in/Sign up',
+            name: 'No lists yet',
             type: 'personal'
           });
           setIsLoadingTasks(false);
@@ -406,7 +406,7 @@ if (!token) {
             const nextList = remainingItems[0];
             setActiveContext({ id: nextList.id, name: nextList.label, type: 'personal' });
           } else {
-            setActiveContext({ id: 'empty', name: 'Sign in/Sign up', type: 'personal' });
+            setActiveContext({ id: 'empty', name: 'No lists yet', type: 'personal' });
           }
           setTasks([]);
         }
