@@ -198,14 +198,14 @@ const Lists = () => {
         />
       </div>
 
-      {/* UPDATED MAIN VIEW: Lower left padding + high right padding forces the centered column leftward */}
-      <main className={`flex-1 flex flex-col items-center pt-6 pl-8 pr-24 md:pr-40 transition-all duration-300 w-full pb-40 ${
-        s.isLeftSidebarOpen ? 'ml-64' : 'ml-0'
+      {/* UPDATED MAIN VIEW: Responsive padding */}
+      <main className={`flex-1 flex flex-col items-center pt-4 sm:pt-6 px-3 sm:px-8 sm:pr-24 md:pr-40 transition-all duration-300 w-full pb-40 ${
+        s.isLeftSidebarOpen ? 'ml-0 sm:ml-64' : 'ml-0'
       }`}>
         <div className="absolute right-0 bottom-0 w-80 h-[80%] bg-[#FCECD7] rounded-l-full opacity-40 transform translate-x-10 pointer-events-none z-0" />
 
         {/* TOP ROW HEADER BLOCK */}
-        <div className="w-full max-w-2xl flex items-center justify-between mb-8 z-10 relative">
+        <div className="w-full max-w-2xl flex flex-col sm:flex-row items-center justify-between mb-6 sm:mb-8 z-10 relative gap-3">
           {/* Menu Button Side Offset Column */}
           <div className="w-12 shrink-0 flex justify-start">
             {!s.isLeftSidebarOpen && (
@@ -215,29 +215,27 @@ const Lists = () => {
             )}
           </div>
           
-          {/* Greeting Box */}
-          <div className="text-center flex-1 ml-25">
-            <h1 className="text-4xl font-semibold text-gray-900 leading-tight tracking-tight capitalize">
-              {s.greeting},<br />{displayedName} !
+          {/* Greeting Box - Responsive text */}
+          <div className="text-center flex-1">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-900 leading-tight tracking-tight capitalize">
+              {s.greeting},<br className="sm:hidden" />{displayedName} !
             </h1>
-            <p className="text-gray-500 mt-1 text-xs">{s.currentDate}</p>
+            <p className="text-gray-500 mt-1 text-xs sm:text-sm">{s.currentDate}</p>
           </div>
 
-          {/* AI Insights Button (Still mapped to the absolute top-right edge of the row container) */}
-          <div className="w-32 shrink-0 flex justify-end ">
-            
-          </div>
+          {/* AI Insights Button */}
+          <div className="w-12 shrink-0" />
         
         </div>
 
         {/* List Name Header & Progress Tracker Section */}
-        <div className="w-full max-w-2xl mb-6 z-10 text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">{s.activeListName}</h2>
+        <div className="w-full max-w-2xl mb-4 sm:mb-6 z-10 text-center">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">{s.activeListName}</h2>
           
-          <div className="w-full bg-white border border-gray-200 rounded-2xl p-4 shadow-sm text-left">
+          <div className="w-full bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 shadow-sm text-left">
             <div className="flex justify-between items-center text-xs font-semibold text-gray-500 mb-2">
               <span>Progress</span>
-              <span>{completedTasks} / {totalTasks} Done ({Math.round(listProgressPercentage)}%)</span>
+              <span className="text-right">{completedTasks} / {totalTasks} Done ({Math.round(listProgressPercentage)}%)</span>
             </div>
             <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
               <div className="bg-emerald-500 h-full transition-all duration-300" style={{ width: `${listProgressPercentage}%` }} />
@@ -246,9 +244,9 @@ const Lists = () => {
         </div>
 
         {/* TASK STREAM CARDS */}
-        <div className="w-full max-w-2xl space-y-4 z-10 text-left">
+        <div className="w-full max-w-2xl space-y-3 sm:space-y-4 z-10 text-left">
           {s.tasks.length === 0 && !s.isLoadingTasks ? (
-            <div className="bg-white/50 border border-dashed border-gray-300 rounded-2xl p-12 text-center text-xs text-gray-400 w-full">
+            <div className="bg-white/50 border border-dashed border-gray-300 rounded-2xl p-6 sm:p-12 text-center text-xs text-gray-400 w-full">
               No tasks listed under this filter index.
             </div>
           ) : (
@@ -273,11 +271,11 @@ const Lists = () => {
         )}
 
         {/* FIXED CHAT-STYLE BOTTOM INPUT PANEL */}
-        <div className={`fixed bottom-0 right-0 p-6 bg-linear-to-t from-[#FDF6EC] via-[#FDF6EC] to-transparent pt-10 z-20 transition-all duration-300 ${
-          s.isLeftSidebarOpen ? 'left-64' : 'left-0'
+        <div className={`fixed bottom-0 right-0 p-3 sm:p-6 bg-linear-to-t from-[#FDF6EC] via-[#FDF6EC] to-transparent pt-6 sm:pt-10 z-20 transition-all duration-300 w-full sm:w-auto ${
+          s.isLeftSidebarOpen ? 'left-0 sm:left-64' : 'left-0'
         }`}>
-          {/* UPDATED: Added a right margin offset (mr-24 md:mr-40) matching the parent layout to keep it aligned with the tasks */}
-          <div className="w-full max-w-2xl mx-auto mr-24 md:mr-83 ml-auto bg-white border border-gray-200 rounded-2xl p-4 shadow-lg flex flex-col gap-3">
+          {/* Responsive bottom input with mobile-friendly margins */}
+          <div className="w-full max-w-2xl mx-auto sm:mr-24 md:mr-40 ml-auto bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 shadow-lg flex flex-col gap-3">
             <textarea 
               ref={inputRef}
               value={s.newTaskTitle} 
