@@ -5,6 +5,27 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_REDIRECT_URL
 const STATE_COOKIE_NAME = 'google_oauth_state'
 
+function resolveRedirectUri(requestUrl: string, configuredUri?: string) {
+  const requestOrigin = new URL(requestUrl).origin
+  if (!configuredUri) {
+    return `${requestOrigin}/api/auth/google/callback`
+  }
+
+  try {
+    const parsed = new URL(configuredUri)
+    const isMatchingOrigin = parsed.origin === requestOrigin
+    const isCallbackPath = parsed.pathname.replace(/\/+$/, '') === '/api/auth/google/callback'
+
+    if (isMatchingOrigin && isCallbackPath) {
+      return parsed.toString()
+    }
+  } catch {
+    // fall back to the current request origin
+  }
+
+  return `${requestOrigin}/api/auth/google/callback`
+}
+
 export async function GET(req: Request) {
   if (!GOOGLE_CLIENT_ID) {
     return NextResponse.json(
@@ -13,8 +34,7 @@ export async function GET(req: Request) {
     )
   }
 
-  const origin = new URL(req.url).origin
-  const redirectUri = GOOGLE_REDIRECT_URI || `${origin}/api/auth/google/callback`
+  const redirectUri = resolveRedirectUri(req.url, GOOGLE_REDIRECT_URI)
 
   const state = randomBytes(16).toString('hex')
   const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')

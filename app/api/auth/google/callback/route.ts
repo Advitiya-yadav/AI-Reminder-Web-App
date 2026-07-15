@@ -8,6 +8,27 @@ const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || process.env.GOOGL
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key'
 const STATE_COOKIE_NAME = 'google_oauth_state'
 
+function resolveRedirectUri(requestUrl: string, configuredUri?: string) {
+  const requestOrigin = new URL(requestUrl).origin
+  if (!configuredUri) {
+    return `${requestOrigin}/api/auth/google/callback`
+  }
+
+  try {
+    const parsed = new URL(configuredUri)
+    const isMatchingOrigin = parsed.origin === requestOrigin
+    const isCallbackPath = parsed.pathname.replace(/\/+$/, '') === '/api/auth/google/callback'
+
+    if (isMatchingOrigin && isCallbackPath) {
+      return parsed.toString()
+    }
+  } catch {
+    // fall back to the current request origin
+  }
+
+  return `${requestOrigin}/api/auth/google/callback`
+}
+
 async function fetchGoogleToken(code: string, redirectUri: string) {
   const body = new URLSearchParams({
     code,
@@ -55,7 +76,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Invalid OAuth state or missing code' }, { status: 400 })
   }
 
-  const redirectUri = GOOGLE_REDIRECT_URI || `${url.origin}/api/auth/google/callback`
+  const redirectUri = resolveRedirectUri(req.url, GOOGLE_REDIRECT_URI)
   const tokenResponse = await fetchGoogleToken(code, redirectUri)
 
   if (!tokenResponse.access_token) {
