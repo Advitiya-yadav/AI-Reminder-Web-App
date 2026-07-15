@@ -48,12 +48,14 @@ const Lists = () => {
           setDisplayedName(normalized);
         }
       }
+      setAuthChecked(true);
       router.replace('/lists');
       return;
     }
 
     const token = localStorage.getItem('token');
     if (!token) {
+      setAuthChecked(true);
       router.replace('/');
       return;
     }

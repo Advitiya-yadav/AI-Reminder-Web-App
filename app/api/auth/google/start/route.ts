@@ -19,7 +19,6 @@ export async function GET(req: Request) {
   const state = randomBytes(16).toString('hex')
   const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
   authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID)
-  authUrl.searchParams.set('redirect_uri', GOOGLE_REDIRECT_URI)
   authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('scope', 'openid email profile')
   authUrl.searchParams.set('access_type', 'offline')
