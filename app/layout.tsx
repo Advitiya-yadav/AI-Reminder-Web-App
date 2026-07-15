@@ -23,7 +23,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Promptly",
-  description: "Your AI reminders",
+  description: "Your warm reminders",
+};
+// Set site icons to the promptly logo (place your files under public/promptly_logo/)
+export const icons = {
+  icon: '/promptly_logo.png',
+  apple: '/promptly_logo.png',
 };
 
 export default function RootLayout({

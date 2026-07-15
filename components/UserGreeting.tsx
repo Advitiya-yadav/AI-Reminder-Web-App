@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { getGreeting } from '@/lib/localization';
-import { Globe } from 'lucide-react';
 
 const normalizeDisplayName = (value: unknown) => {
   if (typeof value !== 'string') return '';
@@ -22,6 +21,19 @@ export default function UserGreeting({ userId, token }: UserGreetingProps) {
   const [username, setUsername] = useState('User');
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(true);
+
+  // Logo fallback handling: tries common paths you might have added to /public
+  const logoCandidates = [
+    '/promptly_logo.png',
+    '/promptly_logo.svg',
+    '/promptly_logo/logo.png',
+    '/promptly_logo/logo.svg',
+    '/logo.png',
+    '/logo.svg',
+    '/file.svg',
+    '/globe.svg',
+  ];
+  const [logoSrc, setLogoSrc] = useState(logoCandidates[0]);
 
   useEffect(() => {
     async function fetchUserData() {
@@ -56,7 +68,18 @@ export default function UserGreeting({ userId, token }: UserGreetingProps) {
           <h1 className="text-3xl font-bold">{greeting}, {username}! 👋</h1>
           <p className="text-blue-100 mt-2">Welcome back to your task manager</p>
         </div>
-        <div className="text-5xl opacity-50">📋</div>
+        <div className="w-12 h-12">
+          <img
+            src={logoSrc}
+            alt="Promptly logo"
+            className="h-12 w-12 object-contain opacity-95"
+            onError={(e) => {
+              const idx = logoCandidates.indexOf(logoSrc);
+              const next = logoCandidates[idx + 1];
+              if (next) setLogoSrc(next);
+            }}
+          />
+        </div>
       </div>
     </div>
   );
