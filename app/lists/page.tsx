@@ -48,8 +48,11 @@ const Lists = () => {
           setDisplayedName(normalized);
         }
       }
+      if (typeof window !== 'undefined') {
+        window.location.href = '/lists';
+        return;
+      }
       setAuthChecked(true);
-      router.replace('/lists');
       return;
     }
 

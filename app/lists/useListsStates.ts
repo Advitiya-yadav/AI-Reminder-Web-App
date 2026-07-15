@@ -107,14 +107,20 @@ export const useListsState = () => {
   useEffect(() => {
     const fetchAllLists = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const localToken = localStorage.getItem('token');
+        const urlToken = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('token') : null;
+        const token = localToken || urlToken;
 
-if (!token) {
-        setSidebarItems([]);
-        setActiveContext({ id: 'error', name: 'Please create account', type: 'personal' });
-        setIsLoadingTasks(false);
-        return;
-      }
+        if (!token) {
+          setSidebarItems([]);
+          setActiveContext({ id: 'error', name: 'Please create account', type: 'personal' });
+          setIsLoadingTasks(false);
+          return;
+        }
+
+        if (urlToken && !localToken) {
+          localStorage.setItem('token', urlToken);
+        }
 
       const response = await fetch('/api/lists', {
         headers: {
